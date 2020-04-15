@@ -11,7 +11,127 @@
     <body>
         <canvas id = "myCanvas" width="640" height="480"></canvas>
         <script>
-            //game code here
+            var canvas = document.getElementById("myCanvas");
+            var context = canvas.getContext("2d");
+            
+            var ballColor = "#FFF";
+            var leftPaddleColor = "#FFF";
+            var rightPaddleColor = "#FFF";
+
+            function Ball(color, x, y, dx, dy, radius) {
+                this.color = color;
+                this.x = x;
+                this.y = y;
+                this.dx = dx;
+                this.dy = dy;
+                this.radius = radius; 
+            }
+
+            var ball = new Ball(ballColor,
+                                canvas.width/2,
+                                canvas.height/2,
+                                Math.random() * 10 - 5,
+                                Math.random() * 10 - 5,
+                                10);
+
+            function Paddle(color, x, y, height, width) {
+                this.color = color;
+                this.x = x; //a paddle's position is its top-left corner
+                this.y = y;
+                this.height = height;
+                this.width = width;
+            };
+
+            var leftPaddle = new Paddle(leftPaddleColor,
+                                        canvas.width/4,
+                                        canvas.height/2,
+                                        canvas.height/5,
+                                        canvas.width/100);
+            var rightPaddle = new Paddle(rightPaddleColor,
+                                         canvas.width*3/4,
+                                         canvas.height/2,
+                                         canvas.height/5,
+                                         canvas.width/100);
+
+            function drawBall(ball) {
+                context.beginPath();
+                context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                context.fillStyle = ball.color;
+                context.fill();
+                context.closePath();
+            }
+
+            function updatePosition(ball) {
+                    ball.x += ball.dx;
+                    ball.y += ball.dy;
+                    if (ball.x + ball.dx < ball.radius || ball.x + ball.dx > canvas.width-ball.radius) {
+                        ball.dx = -ball.dx;
+                    }
+                    if (ball.y + ball.dy < ball.radius || ball.y + ball.dy > canvas.height-ball.radius){
+                        ball.dy = -ball.dy;
+                    }
+            }
+    
+            function drawPaddle(paddle) {
+                context.beginPath();
+                context.rect(paddle.x, paddle.y, paddle.width, paddle.height);
+                context.fillStyle = paddle.color;
+                context.fill();
+                context.closePath();    
+            }
+
+            function collisionDetectionBallPaddle(ball, paddle) {
+                /* check collision by approximating ball as a square;
+                 * ball collided if right/left edge of square is inside of paddle
+                 * returns: boolean value indicating if there was a collision
+                 */
+
+                /* check if top of ball above bottom of paddle
+                 * and bottom of ball below top of paddle;
+                 * this is true when either side of ball collides
+                 */
+                                
+                var yCollides = ( (ball.y - ball.radius) <= (paddle.y + paddle.height) &&
+                                    (ball.y + ball.radius) >= paddle.y);
+
+                /* check if x-value of right edge of ball is 
+                 * between left & right of paddle;
+                 * this is true when the right edge of the ball collides
+                 */
+                var xCollidesRight = ( paddle.x <= (ball.x + ball.radius) && 
+                                            (ball.x + ball.radius) <= (paddle.x + paddle.width) );
+
+                /* check if x-value of left edge of ball is
+                 * between left & right paddle;
+                 * this is true when the left edge of the ball collides
+                 */
+                var xCollidesLeft = ( paddle.x <= (ball.x - ball.radius) &&
+                                            (ball.x - ball.radius) <= (paddle.x + paddle.width) );
+
+                //now, check if either side of ball collides
+                
+                if ( (xCollidesLeft || xCollidesRight) && yCollides ) {
+                    ball.dx = -ball.dx;
+                    return true;
+                } else {
+                    return false;
+                }
+             }
+
+            function draw() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                drawBall(ball);
+                drawPaddle(leftPaddle);
+                drawPaddle(rightPaddle);
+
+                collisionDetectionBallPaddle(ball, leftPaddle);
+                collisionDetectionBallPaddle(ball, rightPaddle);
+
+                updatePosition(ball);
+            }
+
+            var interval = setInterval(draw, 10);
         </script>
     </body>
 </html>
