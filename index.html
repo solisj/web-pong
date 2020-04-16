@@ -14,6 +14,7 @@
             var canvas = document.getElementById("myCanvas");
             var context = canvas.getContext("2d");
             
+            var ballSpeed = Math.random() * 10 + 2; 
             var ballColor = "#FFF";
             var leftPaddleColor = "#FFF";
             var rightPaddleColor = "#FFF";
@@ -26,12 +27,13 @@
                 this.dy = dy;
                 this.radius = radius; 
             }
-
+            
+            var angle = Math.random() * 2 * Math.PI;
             var ball = new Ball(ballColor,
                                 canvas.width/2,
                                 canvas.height/2,
-                                Math.random() * 10 - 5,
-                                Math.random() * 10 - 5,
+                                Math.cos(angle) * ballSpeed,
+                                Math.sin(angle) * ballSpeed * -1,
                                 10);
 
             function Paddle(color, x, y, height, width) {
@@ -52,6 +54,10 @@
                                          canvas.height/2,
                                          canvas.height/5,
                                          canvas.width/100);
+
+            // handle input from players
+            document.addEventListener("keydown",keyDownHandler, false);
+            document.addEventListener("keyup", keyUpHandler, false);
 
             function drawBall(ball) {
                 context.beginPath();
@@ -82,36 +88,41 @@
 
             function collisionDetectionBallPaddle(ball, paddle) {
                 /* check collision by approximating ball as a square;
-                 * ball collided if right/left edge of square is inside of paddle
+                 * ball collided if it is inside of paddle
                  * returns: boolean value indicating if there was a collision
                  */
 
+                var maxAngle = 70 * Math.PI / 180; //send ball back at angle max 70 degs
+
                 /* check if top of ball above bottom of paddle
-                 * and bottom of ball below top of paddle;
-                 * this is true when either side of ball collides
+                 * and bottom of ball below top of paddle
                  */
                                 
                 var yCollides = ( (ball.y - ball.radius) <= (paddle.y + paddle.height) &&
                                     (ball.y + ball.radius) >= paddle.y);
-
-                /* check if x-value of right edge of ball is 
-                 * between left & right of paddle;
-                 * this is true when the right edge of the ball collides
+                
+                /* check if right of ball to the right of left of paddle
+                 * and left of ball to the left of right of paddle;
                  */
-                var xCollidesRight = ( paddle.x <= (ball.x + ball.radius) && 
-                                            (ball.x + ball.radius) <= (paddle.x + paddle.width) );
-
-                /* check if x-value of left edge of ball is
-                 * between left & right paddle;
-                 * this is true when the left edge of the ball collides
-                 */
-                var xCollidesLeft = ( paddle.x <= (ball.x - ball.radius) &&
-                                            (ball.x - ball.radius) <= (paddle.x + paddle.width) );
+                var xCollides = ( (ball.x + ball.radius) >= paddle.x &&
+                                    (ball.x - ball.radius) <= (paddle.x + paddle.width) );
 
                 //now, check if either side of ball collides
                 
-                if ( (xCollidesLeft || xCollidesRight) && yCollides ) {
-                    ball.dx = -ball.dx;
+                if ( xCollides && yCollides ) {
+                    // find the relative position of the ball on the paddle
+                    // i.e. how high/low it is relative to the center of the paddle
+                    // scaled down to be in [-1,1] where 1 is low and -1 is high
+    
+                    // and ball radius may be above or below the top/bottom of the actual paddle
+                    var scaledPaddleHeight = paddle.height + 2 * ball.radius; 
+                    var relativePaddlePosition = ((ball.y - (paddle.y - ball.radius) ) - scaledPaddleHeight/2)/(scaledPaddleHeight/2);
+                    
+                    ball.dy = ballSpeed * Math.sin(relativePaddlePosition * maxAngle);
+                    
+                    //reverse the direction of the ball
+                    var ballDxSign = (ball.dx > 0 ? 1 : -1);
+                    ball.dx = ballSpeed * Math.cos(relativePaddlePosition * maxAngle) * ballDxSign * -1;
                     return true;
                 } else {
                     return false;
