@@ -14,8 +14,9 @@
             var canvas = document.getElementById("myCanvas");
             var context = canvas.getContext("2d");
             
-            var ballSpeed = Math.random() * 10 + 2; 
+            var ballSpeed = Math.sqrt(Math.pow(canvas.width,2) + Math.pow(canvas.height, 2))/(100*5); 
             var ballColor = "#FFF";
+            var paddleSpeed = canvas.height / (100*2);
             var leftPaddleColor = "#FFF";
             var rightPaddleColor = "#FFF";
 
@@ -40,6 +41,8 @@
                 this.color = color;
                 this.x = x; //a paddle's position is its top-left corner
                 this.y = y;
+                this.up = false;
+                this.down = false;
                 this.height = height;
                 this.width = width;
             };
@@ -59,6 +62,34 @@
             document.addEventListener("keydown",keyDownHandler, false);
             document.addEventListener("keyup", keyUpHandler, false);
 
+            function keyDownHandler(e) {
+                if (e.key == "w") {
+                    leftPaddle.up = true; //make paddle go up
+                } else if (e.key == "s") {
+                    leftPaddle.down = true;
+                }
+
+                if (e.key == "Up" || e.key == "ArrowUp") {
+                    rightPaddle.up = true;
+                } else if (e.key == "Up" || e.key == "ArrowDown") {
+                    rightPaddle.down = true;
+                }
+            }
+            
+            function keyUpHandler(e) {
+                if (e.key == "w") {
+                    leftPaddle.up = false;
+                } else if (e.key == "s") {
+                    leftPaddle.down = false;
+                }
+
+                if (e.key == "Up" || e.key == "ArrowUp") {
+                    rightPaddle.up = false;
+                } else if (e.key == "Up" || e.key == "ArrowDown") {
+                    rightPaddle.down = false;
+                }
+            }
+
             function drawBall(ball) {
                 context.beginPath();
                 context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -67,7 +98,7 @@
                 context.closePath();
             }
 
-            function updatePosition(ball) {
+            function updatePositionBall(ball) {
                     ball.x += ball.dx;
                     ball.y += ball.dy;
                     if (ball.x + ball.dx < ball.radius || ball.x + ball.dx > canvas.width-ball.radius) {
@@ -84,6 +115,22 @@
                 context.fillStyle = paddle.color;
                 context.fill();
                 context.closePath();    
+            }
+
+            function updatePositionPaddle(paddle) {
+                //determine velocity of paddle
+                var paddleDy;
+                if (paddle.up ^ paddle.down) { //user is pressing either up or down for this paddle, not both (bitwise xor)
+                    paddleDy = ( paddle.up ? -paddleSpeed : paddleSpeed);
+                } else {
+                    paddleDy = 0;
+                }
+
+                paddle.y += paddleDy;
+
+                if (paddle.y < 0 || paddle.y + paddleDy > canvas.height - paddle.height) {
+                    paddle.y -= paddleDy;   
+                }
             }
 
             function collisionDetectionBallPaddle(ball, paddle) {
@@ -139,7 +186,9 @@
                 collisionDetectionBallPaddle(ball, leftPaddle);
                 collisionDetectionBallPaddle(ball, rightPaddle);
 
-                updatePosition(ball);
+                updatePositionBall(ball);
+                updatePositionPaddle(leftPaddle);
+                updatePositionPaddle(rightPaddle);
             }
 
             var interval = setInterval(draw, 10);
